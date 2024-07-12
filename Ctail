@@ -1,0 +1,204 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#define max 5865
+
+
+
+void verbose(FILE *file, const char *filename);
+void numbyte(FILE *file, long num_bytes);
+char** allocmemchar(int n,int p);
+void freemem(char ** str,int n);
+void lastligne(int n,FILE* file);
+void silent(FILE *file);
+FILE* Open(char *str);
+
+
+int main (int argc, char* argv[])
+{
+
+    FILE* file=NULL;
+    if (argc==4)
+    {   
+        
+        file=Open(argv[3]); 
+        if(strcmp(argv[1],"-n")==0)
+        {   
+            lastligne(atoi(argv[2]),file);
+        }
+        else if (strcmp(argv[1],"-c")==0)
+        {   
+            numbyte(file,atoi(argv[2]));
+        }
+        
+    }
+    else if (argc == 3)
+    {   
+        printf("%s",argv[2]);
+        file=Open(argv[2]);
+       if (strcmp(argv[1],"-v")==0)
+        {   
+            verbose(file,argv[2]);
+        } 
+        else if(strcmp(argv[1],"-v")==0)
+        {
+            silent(file);
+        }
+    }
+    else  
+    {
+        file=Open(argv[1]); 
+        lastligne(10,file);
+        
+    }
+
+    
+    
+    return 0;
+}
+
+
+
+FILE* Open(char *str)
+{
+    FILE* file=fopen(str,"r");
+    if(file==NULL)
+    {
+        printf("Erreur d'ouverture du fichier\n");
+        exit (EXIT_FAILURE);
+    }
+    return(file);
+}
+
+
+void lastligne(int n,FILE* file)
+{   
+    int c,i=0,p=0;
+    char tmp[max];
+    char** str=NULL;
+    //compter le nombre de ligne
+    while(fgets(tmp,max,file) !=NULL)
+        p++;
+    
+    rewind(file);
+    str=allocmemchar(p,max);
+    p=0;
+    while(fgets(tmp,max,file) !=NULL )
+    {   
+        strcpy(str[p],tmp);
+        p++;
+    }
+    //affichage
+    for (i=p-n;i<p;i++)
+    {
+        printf("%s",str[i]);
+    }
+    freemem(str,p);
+    fclose(file);
+    
+}
+
+
+char** allocmemchar(int n,int p)
+{   int i=0;
+    char **A=NULL;
+    A=(char**)malloc(n*sizeof(char*));
+    if (A==NULL)
+    {
+        printf("Erreur d'Allocation memoire\n");
+        exit (1);
+    }
+    for (i;i<n;i++)
+    {
+        A[i]=(char*)malloc(p*sizeof(char));
+        if (A[i]==NULL)
+        {
+            printf("Erreur Allocation memoire numero %d\n",i);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return(A);
+
+}
+
+void freemem(char ** str,int n)
+{
+    int i=0;
+   
+    for (i;i<n;i++)
+    {
+        free(str[i]);
+    }
+     free(str);
+}
+
+void numbyte(FILE *file, long num_bytes) {
+    
+    fseek(file, 0, SEEK_END);
+    
+    long file_size = ftell(file);
+    
+    long start_pos = file_size - num_bytes;
+    if (start_pos < 0) start_pos = 0;
+
+    
+    fseek(file, start_pos, SEEK_SET);
+
+    char buffer[256];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        fwrite(buffer, 1, bytes_read, stdout);
+    }
+
+    fclose(file);
+}
+void verbose(FILE *file, const char *filename) {
+
+
+    fseek(file, 0, SEEK_END);
+    char buffer[256];
+    long file_position = ftell(file);
+
+    printf("==> %s <==\n", filename);
+
+    while (1) {
+        fseek(file, 0, SEEK_END);
+        long new_file_position = ftell(file);
+
+        if (new_file_position > file_position) {
+            fseek(file, file_position, SEEK_SET);
+            size_t bytes_read = fread(buffer, 1, sizeof(buffer), file);
+            if (bytes_read > 0) {
+                fwrite(buffer, 1, bytes_read, stdout);
+                file_position = ftell(file);
+            }
+        }
+        usleep(500000);
+    }
+    fclose(file);
+}
+
+void silent(FILE *file) {
+
+    fseek(file, 0, SEEK_END);
+    char buffer[256];
+    long file_position = ftell(file);
+
+    while (1) {
+        fseek(file, 0, SEEK_END);
+        long new_file_position = ftell(file);
+
+        if (new_file_position > file_position) {
+            fseek(file, file_position, SEEK_SET);
+            size_t bytes_read = fread(buffer, 1, sizeof(buffer), file);
+            if (bytes_read > 0) 
+            {
+                fwrite(buffer, 1, bytes_read, stdout);
+                file_position = ftell(file);
+            }
+        }
+        usleep(500000);
+    }
+    fclose(file);
+}
